@@ -15,19 +15,10 @@ NC='\033[0m'
 NO_UI=false
 [ "${1:-}" = "--no-ui" ] && NO_UI=true
 
-# ── Scroll region ────────────────────────────────────────────────────────────
-BANNER_HEIGHT=9
-
-init_scroll() {
-    $NO_UI && return 0
-    [ -t 1 ] || return 0
-    local lines
-    lines=$(tput lines 2>/dev/null || echo 24)
-    if [ "$lines" -gt "$BANNER_HEIGHT" ]; then
-        tput csr "$BANNER_HEIGHT" $((lines - 1)) 2>/dev/null || true
-    fi
-    printf '\033[2J\033[H'
-    printf "${GREEN}${BOLD}\n"
+# ── Banner helper ────────────────────────────────────────────────────────────
+banner() {
+    local color="$1"
+    printf "${color}${BOLD}\n"
     cat << 'BANNER'
    █████╗ ██╗     ███████╗██████╗ ████████╗██╗  ██╗███████╗████████╗ ██████╗
   ██╔══██╗██║     ██╔════╝██╔══██╗╚══██╔══╝╚██╗██╔╝██╔════╝╚══██╔══╝██╔═══██╗
@@ -38,18 +29,12 @@ init_scroll() {
 BANNER
     printf "${NC}"
     printf "  ${DIM}dotfiles  ·  DOCTOR  ·  Fedora 44${NC}\n\n"
-    printf '\033[%d;1H' $((BANNER_HEIGHT + 1))
 }
 
-reset_scroll() {
-    $NO_UI && return 0
-    [ -t 1 ] || return 0
-    local lines
-    lines=$(tput lines 2>/dev/null || echo 24)
-    tput csr 0 $((lines - 1)) 2>/dev/null || true
-}
-
-init_scroll
+if ! $NO_UI && [ -t 1 ]; then
+    printf '\033[2J\033[H'
+    banner "${GREEN}"
+fi
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 DOTFILES="$(cd "$(dirname "$0")" && pwd)"
@@ -259,6 +244,4 @@ else
     printf "${YELLOW}Tip: re-run ${DIM}./install.sh${NC}${YELLOW} to fix symlinks and services.${NC}\n"
 fi
 
-# Reset scroll region LAST — never print after this
-reset_scroll
 exit "$FAIL"

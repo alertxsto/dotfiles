@@ -11,18 +11,10 @@ BOLD='\033[1m'
 DIM='\033[2m'
 NC='\033[0m'
 
-# ── Scroll region ────────────────────────────────────────────────────────────
-BANNER_HEIGHT=9
-
-init_scroll() {
-    [ -t 1 ] || return 0
-    local lines
-    lines=$(tput lines 2>/dev/null || echo 24)
-    if [ "$lines" -gt "$BANNER_HEIGHT" ]; then
-        tput csr "$BANNER_HEIGHT" $((lines - 1)) 2>/dev/null || true
-    fi
-    printf '\033[2J\033[H'
-    printf "${RED}${BOLD}\n"
+# ── Banner helper ────────────────────────────────────────────────────────────
+banner() {
+    local color="$1"
+    printf "${color}${BOLD}\n"
     cat << 'BANNER'
    █████╗ ██╗     ███████╗██████╗ ████████╗██╗  ██╗███████╗████████╗ ██████╗
   ██╔══██╗██║     ██╔════╝██╔══██╗╚══██╔══╝╚██╗██╔╝██╔════╝╚══██╔══╝██╔═══██╗
@@ -33,18 +25,11 @@ init_scroll() {
 BANNER
     printf "${NC}"
     printf "  ${DIM}dotfiles  ·  UNINSTALL  ·  Fedora 44${NC}\n\n"
-    printf '\033[%d;1H' $((BANNER_HEIGHT + 1))
 }
 
-reset_scroll() {
-    [ -t 1 ] || return 0
-    local lines
-    lines=$(tput lines 2>/dev/null || echo 24)
-    tput csr 0 $((lines - 1)) 2>/dev/null || true
-}
-
-# ── Init ─────────────────────────────────────────────────────────────────────
-init_scroll
+# ── Clear screen + print banner ─────────────────────────────────────────────
+[ -t 1 ] && printf '\033[2J\033[H'
+banner "${RED}"
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 _step=0
@@ -187,13 +172,14 @@ fi
 # Done
 # ════════════════════════════════════════════════════════════════════════════
 
-printf "\n${BOLD}${GREEN}✔ Uninstalled.${NC}\n"
+# Fresh screen with banner
+[ -t 1 ] && printf '\033[2J\033[H'
+banner "${RED}"
+
+printf "${BOLD}${GREEN}✔ Uninstalled.${NC}\n"
 printf "\n${BOLD}Next steps:${NC}\n"
 printf "  ${CYAN}1.${NC} Restore your original configs from backup:\n"
 printf "         ${DIM}ls ~/.dotfiles-backup/  (pick a timestamp)${NC}\n"
 printf "         ${DIM}cp -r ~/.dotfiles-backup/<timestamp>/.config/* ~/.config/${NC}\n"
 printf "  ${CYAN}2.${NC} Or reinstall: ${DIM}cd ~/dotfiles && ./install.sh${NC}\n"
-printf "  ${CYAN}3.${NC} Unused packages (optional): ${DIM}sudo dnf remove dms accountsservice flameshot sway alacritty${NC}\n\n"
-
-# Reset scroll region LAST — never print after this
-reset_scroll
+printf "  ${CYAN}3.${NC} Unused packages (optional): ${DIM}sudo dnf remove dms accountsservice flameshot sway alacritty${NC}\n"
