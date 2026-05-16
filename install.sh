@@ -250,7 +250,6 @@ step "Running diagnostics"
 # ═════════════════════════════════════════════════════════════════════════════
 # Done
 # ═════════════════════════════════════════════════════════════════════════════
-reset_scroll
 
 if [ "$_backup_created" -eq 1 ]; then
     printf "\n${DIM}Backups saved to: %s${NC}\n" "$BACKUP_DIR"
@@ -264,3 +263,6 @@ printf "         ${DIM}exec systemctl --user start sway-session.target${NC}\n"
 printf "  ${CYAN}2.${NC} Reboot, or run: ${DIM}swaymsg reload${NC}\n"
 printf "  ${CYAN}3.${NC} On first login, run: ${DIM}dms run${NC} (generates theme colors)\n"
 printf "\n${DIM}Or just reboot and enjoy DMS!${NC}\n\n"
+
+# Reset scroll region LAST — never print after this
+reset_scroll

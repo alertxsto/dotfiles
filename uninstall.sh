@@ -173,7 +173,6 @@ done
 # ════════════════════════════════════════════════════════════════════════════
 # Done
 # ════════════════════════════════════════════════════════════════════════════
-reset_scroll
 
 printf "\n${BOLD}${GREEN}✔ Uninstalled.${NC}\n"
 printf "\n${BOLD}Next steps:${NC}\n"
@@ -182,3 +181,6 @@ printf "         ${DIM}ls ~/.dotfiles-backup/  (pick a timestamp)${NC}\n"
 printf "         ${DIM}cp -r ~/.dotfiles-backup/<timestamp>/.config/* ~/.config/${NC}\n"
 printf "  ${CYAN}2.${NC} Or reinstall: ${DIM}cd ~/dotfiles && ./install.sh${NC}\n"
 printf "  ${CYAN}3.${NC} Unused packages (optional): ${DIM}sudo dnf remove dms accountsservice flameshot sway alacritty${NC}\n\n"
+
+# Reset scroll region LAST — never print after this
+reset_scroll

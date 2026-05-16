@@ -243,8 +243,6 @@ fi
 # ═════════════════════════════════════════════════════════════════════════════
 # Summary
 # ═════════════════════════════════════════════════════════════════════════════
-reset_scroll
-
 printf "\n${BOLD}${GREEN}═════════════════════════════${NC}\n"
 printf "${BOLD}Summary${NC}\n"
 printf "  ${GREEN}✔${NC}  %d passed\n" "$OK"
@@ -261,4 +259,6 @@ else
     printf "${YELLOW}Tip: re-run ${DIM}./install.sh${NC}${YELLOW} to fix symlinks and services.${NC}\n"
 fi
 
+# Reset scroll region LAST — never print after this
+reset_scroll
 exit "$FAIL"
