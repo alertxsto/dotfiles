@@ -33,6 +33,8 @@ echo "==> Setting up directories..."
 mkdir -p "$HOME/.config/sway"
 mkdir -p "$HOME/.config/systemd/user"
 mkdir -p "$HOME/.config/dms"
+mkdir -p "$HOME/.config/alacritty"
+mkdir -p "$HOME/.config/kitty"
 mkdir -p "$HOME/.local/bin"
 
 # ── Symlinks ──────────────────────────────────────────────
@@ -54,6 +56,12 @@ link "$DOTFILES/.config/systemd/user/dms-sway-colors.path"    "$HOME/.config/sys
 link "$DOTFILES/.config/systemd/user/dms-sway-colors.service" "$HOME/.config/systemd/user/dms-sway-colors.service"
 link "$DOTFILES/.config/dms"             "$HOME/.config/dms"
 link "$DOTFILES/.local/bin/dms-sway-colors" "$HOME/.local/bin/dms-sway-colors"
+
+# Terminal configs (individual files so DMS can write its theme files alongside)
+link "$DOTFILES/.config/alacritty/alacritty.toml"  "$HOME/.config/alacritty/alacritty.toml"
+link "$DOTFILES/.config/kitty/kitty.conf"           "$HOME/.config/kitty/kitty.conf"
+# Fallback theme for alacritty (will be overwritten by DMS matugen)
+cp -n "$DOTFILES/.config/alacritty/dank-theme.toml" "$HOME/.config/alacritty/dank-theme.toml" 2>/dev/null || true
 
 # ── DMS Color Watcher ────────────────────────────────────
 echo ""
