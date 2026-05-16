@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+import re
+import sys
+
+colors_file = sys.argv[1] if len(sys.argv) > 1 else '/home/alertxsto/.local/share/color-schemes/DankMatugenDark.colors'
+output_file = sys.argv[2] if len(sys.argv) > 2 else None
+
+with open(colors_file) as f:
+    data = f.read()
+
+def get_val(section, key):
+    m = re.search(rf'\[{re.escape(section)}\].*?^{key}=(.*?)$', data, re.MULTILINE | re.DOTALL)
+    return m.group(1).strip() if m else None
+
+def rgb_to_hex(rgb_str):
+    parts = [int(x.strip()) for x in rgb_str.split(',')]
+    return '#{:02x}{:02x}{:02x}'.format(parts[0], parts[1], parts[2])
+
+bg = rgb_to_hex(get_val('WM', 'activeBackground'))
+fg = rgb_to_hex(get_val('WM', 'activeForeground'))
+fg_inactive = rgb_to_hex(get_val('WM', 'inactiveForeground'))
+border = rgb_to_hex(get_val('Colors:Window', 'DecorationFocus'))
+error = rgb_to_hex(get_val('Colors:Window', 'ForegroundNegative'))
+muted = '#49454F'
+
+output = f'''# Auto-generated from DMS theme
+client.focused          {border} {bg} {fg} {border} {border}
+client.focused_inactive {muted} {bg} {fg_inactive} {muted} {muted}
+client.unfocused        {muted} {bg} {fg_inactive} {muted} {muted}
+client.urgent           {error} {bg} {error} {error} {error}
+client.background       {bg}
+'''
+
+if output_file:
+    with open(output_file, 'w') as f:
+        f.write(output)
+else:
+    print(output, end='')

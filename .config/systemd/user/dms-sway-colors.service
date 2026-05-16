@@ -1,0 +1,7 @@
+[Unit]
+Description=Generate sway theme colors from DMS
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/dms-sway-colors %h/.local/share/color-schemes/DankMatugenDark.colors %h/.config/sway/dms-colors.conf
+ExecStartPost=/usr/bin/swaymsg reload

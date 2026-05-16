@@ -1,0 +1,3 @@
+[templates.dmssway]
+input_path = 'CONFIG_DIR/matugen/templates/sway-colors.conf'
+output_path = 'CONFIG_DIR/sway/dms-colors.conf'
