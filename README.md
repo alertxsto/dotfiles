@@ -57,27 +57,73 @@ On first login, run `dms run` once to generate theme files.
 
 ## Keybinds
 
+### Sway WM
+
 | Key | Action |
 |-----|--------|
-| `Mod+Enter` | Launch terminal |
-| `Mod+Space` | App launcher |
+| `Mod+Enter` | Launch terminal (Kitty) |
 | `Mod+Q` | Close window |
-| `Mod+D` | Control Center |
-| `Mod+Shift+D` | Network menu |
-| `Mod+1-9` | Switch workspace |
-| `Mod+Shift+1-9` | Move window to workspace |
-| `Mod+arrows/hjkl` | Focus direction |
-| `Mod+Shift+arrows/hjkl` | Move window direction |
-| `Mod+F` | Fullscreen |
-| `Mod+Shift+F` | Toggle floating |
-| `Mod+R` | Resize mode |
+| `Mod+D` | Spotlight launcher |
+| `Mod+Shift+Escape` | Lock screen |
 | `Mod+Shift+C` | Reload config |
 | `Mod+Shift+E` | Exit Sway |
-| `XF86MonBrightnessUp/Down` | Brightness (DMS OSD) |
-| `XF86AudioRaiseLowerVolume` | Volume (DMS OSD) |
-| `XF86AudioPlay/Next/Prev` | Media (DMS OSD) |
+
+#### DMS Features (no Shift)
+
+| Key | Action |
+|-----|--------|
+| `Mod+N` | Notifications toggle |
+| `Mod+C` | Control Center |
+| `Mod+X` | Power Menu |
+| `Mod+Y` | Clipboard manager (yank) |
+| `Mod+T` | Theme toggle |
+| `Mod+I` | Inhibit idle |
+| `Mod+M` | Night mode toggle |
+| `Mod+Z` | Dashboard |
+| `Mod+,` | DMS Settings |
+
+#### Navigation
+
+| Key | Action |
+|-----|--------|
+| `Mod+h/j/k/l` / arrows | Focus direction |
+| `Mod+Shift+h/j/k/l` / Shift+arrows | Move window |
+| `Mod+Space` | Toggle tiling/floating |
+| `Mod+Shift+Space` | Floating toggle |
+| `Mod+A` | Focus parent |
+| `Mod+F` | Fullscreen |
+
+#### Workspaces
+
+| Key | Action |
+|-----|--------|
+| `Mod+1-0` | Switch workspace 1-10 |
+| `Mod+Shift+1-0` | Move window to workspace |
+| `Mod+Minus` | Scratchpad show |
+| `Mod+Shift+Minus` | Send to scratchpad |
+
+#### Layout
+
+| Key | Action |
+|-----|--------|
+| `Mod+B` | Split horizontal |
+| `Mod+V` | Split vertical |
+| `Mod+S` | Stacking layout |
+| `Mod+W` | Tabbed layout |
+| `Mod+E` | Toggle split |
+| `Mod+R` → `hjkl/arrows` | Resize mode (Enter/Escape to exit) |
+
+#### Hardware Keys
+
+| Key | Action |
+|-----|--------|
+| `XF86MonBrightnessUp/Down` | Brightness ±5% (DMS OSD) |
+| `XF86AudioRaiseVolume/LowerVolume` | Volume ±5% (DMS OSD) |
+| `XF86AudioMute/MicMute` | Mute audio/mic |
+| `XF86AudioPlay/Stop/Next/Prev` | Media control (DMS MPRIS) |
 | `PrtSc` | Flameshot GUI |
-| `Shift+PrtSc` | Flameshot fullscreen |
+| `Mod+PrtSc` | Flameshot full screen |
+| `Ctrl+PrtSc` | Flameshot current screen |
 
 ## Auto Theme Sync
 

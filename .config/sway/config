@@ -3,7 +3,7 @@ set $left h
 set $down j
 set $up k
 set $right l
-set $term alacritty
+set $term kitty
 
 default_border pixel 1
 gaps inner 3
@@ -28,14 +28,15 @@ bindsym $mod+Return exec $term
 bindsym $mod+Shift+q kill
 bindsym $mod+d exec dms ipc call spotlight toggle
 bindsym $mod+Shift+Escape exec dms ipc call lock lock
-bindsym $mod+Shift+n exec dms ipc call notifications toggle
-bindsym $mod+Shift+a exec dms ipc call control-center toggle
-bindsym $mod+Shift+p exec dms ipc call powermenu toggle
-bindsym $mod+Shift+v exec dms ipc call clipboard toggle
-bindsym $mod+Shift+t exec dms ipc call theme toggle
-bindsym $mod+Shift+i exec dms ipc call inhibit toggle
-bindsym $mod+Shift+m exec dms ipc call night toggle
-bindsym $mod+Shift+d exec dms ipc call dash toggle ""
+bindsym $mod+n exec dms ipc call notifications toggle
+bindsym $mod+c exec dms ipc call control-center toggle
+bindsym $mod+x exec dms ipc call powermenu toggle
+bindsym $mod+y exec dms ipc call clipboard toggle
+bindsym $mod+t exec dms ipc call theme toggle
+bindsym $mod+i exec dms ipc call inhibit toggle
+bindsym $mod+m exec dms ipc call night toggle
+bindsym $mod+z exec dms ipc call dash toggle ""
+bindsym $mod+comma exec dms ipc call settings toggle
 bindsym $mod+Shift+c reload
 bindsym $mod+Shift+e exec swaynag -t warning -m 'You pressed the exit shortcut. Do you really want to exit sway? This will end your Wayland session.' -B 'Yes, exit sway' 'swaymsg exit'
 
