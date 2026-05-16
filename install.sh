@@ -1,105 +1,223 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DOTFILES="$(cd "$(dirname "$0")" && pwd)"
-echo "==> Dotfiles installer"
-echo "    Repo: $DOTFILES"
+# ── Colors ────────────────────────────────────────────────────────────────────
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+DIM='\033[2m'
+NC='\033[0m'
 
-# ── Packages ──────────────────────────────────────────────
-echo ""
-echo "==> Installing packages..."
+# ── Helpers ───────────────────────────────────────────────────────────────────
+_step=0
+step() {
+    _step=$(( _step + 1 ))
+    printf "\n${BOLD}${BLUE}[%d]${NC} ${BOLD}%s${NC}\n" "$_step" "$*"
+}
 
-if ! command -v dms &>/dev/null; then
-    echo "    Enabling DMS COPR..."
-    sudo dnf copr enable -y avengemedia/dms
-    sudo dnf install -y dms accountsservice flameshot
-    sudo dnf copr enable -y avengemedia/danklinux
-    echo "    DMS installed."
-else
-    echo "    DMS already installed, skipping."
+ok()   { printf "    ${GREEN}✔${NC}  %s\n" "$*"; }
+info() { printf "    ${CYAN}→${NC}  %s\n" "$*"; }
+warn() { printf "    ${YELLOW}⚠${NC}  %s\n" "$*"; }
+err()  { printf "    ${RED}✘${NC}  %s\n" "$*" >&2; }
+die()  { err "$*"; exit 1; }
+
+# ── Pre-flight checks ─────────────────────────────────────────────────────────
+if [ "$(id -u)" -eq 0 ]; then
+    die "Don't run this as root. sudo will be called when needed."
 fi
 
-# ── System Matugen Templates (sudo) ──────────────────────
-echo ""
-echo "==> Installing system matugen templates (requires sudo)..."
-sudo mkdir -p /usr/share/quickshell/dms/matugen/configs
-sudo mkdir -p /usr/share/quickshell/dms/matugen/templates
-sudo cp "$DOTFILES/.config/dms/matugen/configs/sway.toml" /usr/share/quickshell/dms/matugen/configs/sway.toml
-sudo cp "$DOTFILES/.config/dms/matugen/templates/sway-colors.conf" /usr/share/quickshell/dms/matugen/templates/sway-colors.conf
+if [ "$(uname)" != "Linux" ]; then
+    die "This script only supports Linux."
+fi
 
-# ── Directory Setup ──────────────────────────────────────
-echo ""
-echo "==> Setting up directories..."
-mkdir -p "$HOME/.config/sway"
-mkdir -p "$HOME/.config/systemd/user"
-mkdir -p "$HOME/.config/dms"
-mkdir -p "$HOME/.config/alacritty"
-mkdir -p "$HOME/.config/kitty"
-mkdir -p "$HOME/.local/bin"
+DOTFILES="$(cd "$(dirname "$0")" && pwd)"
 
-# ── Symlinks ──────────────────────────────────────────────
-echo ""
-echo "==> Creating symlinks..."
+printf "\n${BOLD}alertxsto/dotfiles${NC} ${DIM}— DMS + Sway installer${NC}\n"
+printf "${DIM}Repo: %s${NC}\n" "$DOTFILES"
 
+# ── Backup helper ─────────────────────────────────────────────────────────────
+BACKUP_DIR="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
+_backup_created=0
+
+backup() {
+    local target="$1"
+    if [ -e "$target" ] && [ ! -L "$target" ]; then
+        if [ "$_backup_created" -eq 0 ]; then
+            mkdir -p "$BACKUP_DIR"
+            _backup_created=1
+        fi
+        local rel="${target#"$HOME/"}"
+        local dst="$BACKUP_DIR/$rel"
+        mkdir -p "$(dirname "$dst")"
+        cp -r "$target" "$dst"
+        warn "Backed up: ~/${rel} → $BACKUP_DIR/${rel}"
+    fi
+}
+
+# ── Symlink helper ────────────────────────────────────────────────────────────
 link() {
     local src="$1" dst="$2"
-    if [ -e "$dst" ] && [ ! -L "$dst" ]; then
-        echo "    WARNING: $dst exists and is not a symlink, skipping"
+    backup "$dst"
+    if [ -L "$dst" ] && [ "$(readlink "$dst")" = "$src" ]; then
+        info "Already linked: $dst"
         return
     fi
     ln -sf "$src" "$dst"
-    echo "    $dst -> $src"
+    ok "Linked: $dst → $src"
 }
 
-link "$DOTFILES/.config/sway"            "$HOME/.config/sway"
-link "$DOTFILES/.config/systemd/user/dms-sway-colors.path"    "$HOME/.config/systemd/user/dms-sway-colors.path"
-link "$DOTFILES/.config/systemd/user/dms-sway-colors.service" "$HOME/.config/systemd/user/dms-sway-colors.service"
-link "$DOTFILES/.config/dms"             "$HOME/.config/dms"
-link "$DOTFILES/.local/bin/dms-sway-colors" "$HOME/.local/bin/dms-sway-colors"
+# ═════════════════════════════════════════════════════════════════════════════
+# [1] Packages
+# ═════════════════════════════════════════════════════════════════════════════
+step "Installing packages"
 
-# Terminal configs (individual files so DMS can write its theme files alongside)
-link "$DOTFILES/.config/alacritty/alacritty.toml"  "$HOME/.config/alacritty/alacritty.toml"
-link "$DOTFILES/.config/kitty/kitty.conf"           "$HOME/.config/kitty/kitty.conf"
-# Fallback theme for alacritty (will be overwritten by DMS matugen)
-cp -n "$DOTFILES/.config/alacritty/dank-theme.toml" "$HOME/.config/alacritty/dank-theme.toml" 2>/dev/null || true
-# Ensure TOML config format (migrate if needed)
-if command -v alacritty &>/dev/null; then
-    alacritty migrate 2>/dev/null || true
-fi
-
-# ── DMS Color Watcher ────────────────────────────────────
-echo ""
-echo "==> Generating sway colors from current DMS theme..."
-if [ -f "$HOME/.local/share/color-schemes/DankMatugenDark.colors" ]; then
-    "$HOME/.local/bin/dms-sway-colors" \
-        "$HOME/.local/share/color-schemes/DankMatugenDark.colors" \
-        "$HOME/.config/sway/dms-colors.conf"
-    echo "    Colors generated."
+if ! command -v dms &>/dev/null; then
+    info "Enabling DMS COPR..."
+    sudo dnf copr enable -y avengemedia/dms
+    sudo dnf copr enable -y avengemedia/danklinux
+    info "Installing: dms accountsservice flameshot sway..."
+    sudo dnf install -y dms accountsservice flameshot sway
+    ok "Packages installed."
 else
-    echo "    WARNING: DMS theme colors not found (run DMS first to generate them)"
+    ok "DMS already installed — skipping package install."
 fi
 
-# ── Systemd Services ─────────────────────────────────────
-echo ""
-echo "==> Enabling systemd services..."
+# Check for JetBrainsMono Nerd Font (needed by alacritty + kitty configs)
+if ! fc-list | grep -qi "JetBrainsMono Nerd Font"; then
+    warn "JetBrainsMono Nerd Font not found."
+    info "Install it from: https://www.nerdfonts.com/font-downloads"
+    info "or: sudo dnf install jetbrains-mono-fonts-all"
+fi
+
+# ═════════════════════════════════════════════════════════════════════════════
+# [2] System matugen templates
+# ═════════════════════════════════════════════════════════════════════════════
+step "Installing system matugen templates (requires sudo)"
+
+SYSMAT=/usr/share/quickshell/dms/matugen
+
+if [ -f "/usr/share/quickshell/dms/matugen/configs/sway.toml" ]; then
+    ok "System matugen templates already installed — skipping."
+else
+    sudo mkdir -p "$SYSMAT/configs" "$SYSMAT/templates"
+    sudo cp "$DOTFILES/.config/dms/matugen/configs/sway.toml"          "$SYSMAT/configs/sway.toml"
+    sudo cp "$DOTFILES/.config/dms/matugen/templates/sway-colors.conf" "$SYSMAT/templates/sway-colors.conf"
+    ok "System templates installed."
+fi
+
+# ═════════════════════════════════════════════════════════════════════════════
+# [3] Directory setup
+# ═════════════════════════════════════════════════════════════════════════════
+step "Setting up directories"
+
+dirs=(
+    "$HOME/.config/sway"
+    "$HOME/.config/systemd/user"
+    "$HOME/.config/dms"
+    "$HOME/.config/alacritty"
+    "$HOME/.config/kitty"
+    "$HOME/.local/bin"
+)
+
+for d in "${dirs[@]}"; do
+    mkdir -p "$d"
+done
+ok "Directories ready."
+
+# ═════════════════════════════════════════════════════════════════════════════
+# [4] Symlinks
+# ═════════════════════════════════════════════════════════════════════════════
+step "Creating symlinks"
+
+# Sway (whole directory)
+link "$DOTFILES/.config/sway"  "$HOME/.config/sway"
+
+# DMS matugen configs
+link "$DOTFILES/.config/dms"   "$HOME/.config/dms"
+
+# Systemd units
+link "$DOTFILES/.config/systemd/user/dms-sway-colors.path"    \
+     "$HOME/.config/systemd/user/dms-sway-colors.path"
+link "$DOTFILES/.config/systemd/user/dms-sway-colors.service" \
+     "$HOME/.config/systemd/user/dms-sway-colors.service"
+
+# Script
+link "$DOTFILES/.local/bin/dms-sway-colors" \
+     "$HOME/.local/bin/dms-sway-colors"
+chmod +x "$DOTFILES/.local/bin/dms-sway-colors"
+
+# Terminal configs (individual files — DMS writes theme files alongside them)
+link "$DOTFILES/.config/alacritty/alacritty.toml" \
+     "$HOME/.config/alacritty/alacritty.toml"
+link "$DOTFILES/.config/kitty/kitty.conf" \
+     "$HOME/.config/kitty/kitty.conf"
+
+# Fallback alacritty theme (copy only if not present; DMS will overwrite later)
+DANK_THEME="$HOME/.config/alacritty/dank-theme.toml"
+if [ ! -f "$DANK_THEME" ]; then
+    cp "$DOTFILES/.config/alacritty/dank-theme.toml" "$DANK_THEME"
+    ok "Deployed fallback alacritty theme."
+else
+    info "Fallback alacritty theme already present — skipping."
+fi
+
+# ═════════════════════════════════════════════════════════════════════════════
+# [5] Alacritty TOML migration
+# ═════════════════════════════════════════════════════════════════════════════
+step "Alacritty TOML compatibility"
+
+if command -v alacritty &>/dev/null; then
+    alacritty migrate 2>/dev/null && ok "alacritty migrate ran OK." || true
+else
+    info "Alacritty not installed — skipping migration."
+fi
+
+# ═════════════════════════════════════════════════════════════════════════════
+# [6] Generate initial sway colors
+# ═════════════════════════════════════════════════════════════════════════════
+step "Generating sway colors from current DMS theme"
+
+DMS_COLORS="$HOME/.local/share/color-schemes/DankMatugenDark.colors"
+SWAY_COLORS="$HOME/.config/sway/dms-colors.conf"
+
+if [ -f "$DMS_COLORS" ]; then
+    "$HOME/.local/bin/dms-sway-colors" "$DMS_COLORS" "$SWAY_COLORS"
+    ok "Colors generated: $SWAY_COLORS"
+else
+    warn "DMS theme colors not found yet."
+    info "Run 'dms run' after first login to generate them."
+fi
+
+# ═════════════════════════════════════════════════════════════════════════════
+# [7] Systemd services
+# ═════════════════════════════════════════════════════════════════════════════
+step "Enabling systemd services"
+
 systemctl --user daemon-reload
 systemctl --user enable --now dms-sway-colors.path
-# DMS is started via sway-session.target
+ok "dms-sway-colors.path enabled."
 
-echo ""
-echo "==> Binding DMS to sway session..."
-systemctl --user enable dms.service 2>/dev/null || true
+step "Binding DMS to sway-session.target"
+
+systemctl --user enable dms.service            2>/dev/null || true
 systemctl --user add-wants sway-session.target dms 2>/dev/null || true
+ok "DMS bound to sway-session.target."
 
-# ── Final ────────────────────────────────────────────────
-echo ""
-echo "==> Done!"
-echo ""
-echo "Next steps:"
-echo "  1. Add to ~/.config/sway/config (already done if symlinked):"
-echo "       exec dbus-update-activation-environment --systemd --all"
-echo "       exec systemctl --user start sway-session.target"
-echo "  2. Restart sway or run: swaymsg reload"
-echo "  3. Run dms once to generate theme colors: dms run"
-echo ""
-echo "Or just reboot and enjoy DMS!"
+# ═════════════════════════════════════════════════════════════════════════════
+# Done
+# ═════════════════════════════════════════════════════════════════════════════
+if [ "$_backup_created" -eq 1 ]; then
+    printf "\n${DIM}Backups saved to: %s${NC}\n" "$BACKUP_DIR"
+fi
+
+printf "\n${BOLD}${GREEN}✔ Done!${NC}\n"
+printf "\n${BOLD}Next steps:${NC}\n"
+printf "  ${CYAN}1.${NC} Your sway config is already symlinked — make sure it contains:\n"
+printf "       ${DIM}exec dbus-update-activation-environment --systemd --all${NC}\n"
+printf "       ${DIM}exec systemctl --user start sway-session.target${NC}\n"
+printf "  ${CYAN}2.${NC} Reboot, or run: ${DIM}swaymsg reload${NC}\n"
+printf "  ${CYAN}3.${NC} On first login, run: ${DIM}dms run${NC} (generates theme colors)\n"
+printf "\n${DIM}Or just reboot and enjoy DMS!${NC}\n\n"
