@@ -11,10 +11,15 @@ BOLD='\033[1m'
 DIM='\033[2m'
 NC='\033[0m'
 
+# ── CLI flag ─────────────────────────────────────────────────────────────────
+NO_UI=false
+[ "${1:-}" = "--no-ui" ] && NO_UI=true
+
 # ── Scroll region ────────────────────────────────────────────────────────────
 BANNER_HEIGHT=9
 
 init_scroll() {
+    $NO_UI && return 0
     [ -t 1 ] || return 0
     local lines
     lines=$(tput lines 2>/dev/null || echo 24)
@@ -37,6 +42,7 @@ BANNER
 }
 
 reset_scroll() {
+    $NO_UI && return 0
     [ -t 1 ] || return 0
     local lines
     lines=$(tput lines 2>/dev/null || echo 24)

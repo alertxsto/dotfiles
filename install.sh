@@ -241,6 +241,13 @@ systemctl --user add-wants sway-session.target dms 2>/dev/null || true
 ok "DMS bound to sway-session.target."
 
 # ═════════════════════════════════════════════════════════════════════════════
+# [8] Doctor — verify everything
+# ═════════════════════════════════════════════════════════════════════════════
+step "Running diagnostics"
+
+"$DOTFILES/dotfiles-doctor.sh" --no-ui && ok "All checks passed." || warn "Some checks failed — review above."
+
+# ═════════════════════════════════════════════════════════════════════════════
 # Done
 # ═════════════════════════════════════════════════════════════════════════════
 reset_scroll
