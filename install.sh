@@ -76,6 +76,7 @@ link() {
         info "Already linked: $dst"
         return
     fi
+    rm -rf "$dst"
     ln -sf "$src" "$dst"
     ok "Linked: $dst → $src"
 }
@@ -125,9 +126,7 @@ fi
 step "Setting up directories"
 
 dirs=(
-    "$HOME/.config/sway"
     "$HOME/.config/systemd/user"
-    "$HOME/.config/dms"
     "$HOME/.config/alacritty"
     "$HOME/.config/kitty"
     "$HOME/.local/bin"
