@@ -11,9 +11,19 @@ BOLD='\033[1m'
 DIM='\033[2m'
 NC='\033[0m'
 
-# ── ASCII Banner ──────────────────────────────────────────────────────────────
-printf "\n${CYAN}${BOLD}"
-cat << 'BANNER'
+# ── Scroll region ────────────────────────────────────────────────────────────
+BANNER_HEIGHT=9
+
+init_scroll() {
+    [ -t 1 ] || return 0
+    local lines
+    lines=$(tput lines 2>/dev/null || echo 24)
+    if [ "$lines" -gt "$BANNER_HEIGHT" ]; then
+        tput csr "$BANNER_HEIGHT" $((lines - 1)) 2>/dev/null || true
+    fi
+    printf '\033[2J\033[H'
+    printf "${CYAN}${BOLD}\n"
+    cat << 'BANNER'
    █████╗ ██╗     ███████╗██████╗ ████████╗██╗  ██╗███████╗████████╗ ██████╗ 
   ██╔══██╗██║     ██╔════╝██╔══██╗╚══██╔══╝╚██╗██╔╝██╔════╝╚══██╔══╝██╔═══██╗
   ███████║██║     █████╗  ██████╔╝   ██║    ╚███╔╝ ███████╗   ██║   ██║   ██║
@@ -21,8 +31,20 @@ cat << 'BANNER'
   ██║  ██║███████╗███████╗██║  ██║   ██║   ██╔╝ ██╗███████║   ██║   ╚██████╔╝
   ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝╚══════╝   ╚═╝    ╚═════╝
 BANNER
-printf "${NC}"
-printf "  ${DIM}dotfiles  ·  DMS + Sway  ·  Fedora 44${NC}\n\n"
+    printf "${NC}"
+    printf "  ${DIM}dotfiles  ·  DMS + Sway  ·  Fedora 44${NC}\n\n"
+    printf '\033[%d;1H' $((BANNER_HEIGHT + 1))
+}
+
+reset_scroll() {
+    [ -t 1 ] || return 0
+    local lines
+    lines=$(tput lines 2>/dev/null || echo 24)
+    tput csr 0 $((lines - 1)) 2>/dev/null || true
+}
+
+# ── Init ─────────────────────────────────────────────────────────────────────
+init_scroll
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 _step=0
@@ -221,6 +243,8 @@ ok "DMS bound to sway-session.target."
 # ═════════════════════════════════════════════════════════════════════════════
 # Done
 # ═════════════════════════════════════════════════════════════════════════════
+reset_scroll
+
 if [ "$_backup_created" -eq 1 ]; then
     printf "\n${DIM}Backups saved to: %s${NC}\n" "$BACKUP_DIR"
 fi
