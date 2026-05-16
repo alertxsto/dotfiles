@@ -131,6 +131,7 @@ dirs=(
     "$HOME/.config/alacritty"
     "$HOME/.config/kitty"
     "$HOME/.local/bin"
+    "$HOME/Pictures/Screenshots"
 )
 
 for d in "${dirs[@]}"; do
