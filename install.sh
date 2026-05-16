@@ -11,6 +11,19 @@ BOLD='\033[1m'
 DIM='\033[2m'
 NC='\033[0m'
 
+# ── ASCII Banner ──────────────────────────────────────────────────────────────
+printf "${CYAN}${BOLD}"
+cat << 'BANNER'
+                .__                 __               __
+  _____   _____|  |   ____________/  |_  ___  _____/  |_  ____
+ /     \ / __ \|  | _/ __ \_  __ \   __\/  _ \/   __\   __\/  _ \
+|  Y Y  \  ___/|  |_\  ___/|  | \/|  | (  <_> )  |   |  | (  <_> )
+|__|_|  /\___  >____/\___  >__|   |__|  \____/|__|   |__|  \____/
+      \/     \/          \/
+BANNER
+printf "${NC}"
+printf "${DIM}           DMS + Sway dotfiles for Fedora${NC}\n\n"
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 _step=0
 step() {
@@ -34,8 +47,6 @@ if [ "$(uname)" != "Linux" ]; then
 fi
 
 DOTFILES="$(cd "$(dirname "$0")" && pwd)"
-
-printf "\n${BOLD}alertxsto/dotfiles${NC} ${DIM}— DMS + Sway installer${NC}\n"
 printf "${DIM}Repo: %s${NC}\n" "$DOTFILES"
 
 # ── Backup helper ─────────────────────────────────────────────────────────────
@@ -86,10 +97,10 @@ else
 fi
 
 # Check for JetBrainsMono Nerd Font (needed by alacritty + kitty configs)
-if ! fc-list | grep -qi "JetBrainsMono Nerd Font"; then
+if ! fc-list 2>/dev/null | grep -qi "JetBrainsMono Nerd Font"; then
     warn "JetBrainsMono Nerd Font not found."
-    info "Install it from: https://www.nerdfonts.com/font-downloads"
-    info "or: sudo dnf install jetbrains-mono-fonts-all"
+    info "Install via: sudo dnf install jetbrains-mono-fonts-all"
+    info "Or download from: https://www.nerdfonts.com/font-downloads"
 fi
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -99,7 +110,7 @@ step "Installing system matugen templates (requires sudo)"
 
 SYSMAT=/usr/share/quickshell/dms/matugen
 
-if [ -f "/usr/share/quickshell/dms/matugen/configs/sway.toml" ]; then
+if [ -f "$SYSMAT/configs/sway.toml" ]; then
     ok "System matugen templates already installed — skipping."
 else
     sudo mkdir -p "$SYSMAT/configs" "$SYSMAT/templates"
@@ -216,8 +227,8 @@ fi
 printf "\n${BOLD}${GREEN}✔ Done!${NC}\n"
 printf "\n${BOLD}Next steps:${NC}\n"
 printf "  ${CYAN}1.${NC} Your sway config is already symlinked — make sure it contains:\n"
-printf "       ${DIM}exec dbus-update-activation-environment --systemd --all${NC}\n"
-printf "       ${DIM}exec systemctl --user start sway-session.target${NC}\n"
+printf "         ${DIM}exec dbus-update-activation-environment --systemd --all${NC}\n"
+printf "         ${DIM}exec systemctl --user start sway-session.target${NC}\n"
 printf "  ${CYAN}2.${NC} Reboot, or run: ${DIM}swaymsg reload${NC}\n"
 printf "  ${CYAN}3.${NC} On first login, run: ${DIM}dms run${NC} (generates theme colors)\n"
 printf "\n${DIM}Or just reboot and enjoy DMS!${NC}\n\n"
