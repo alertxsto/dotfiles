@@ -118,27 +118,31 @@ fi
 # ── JetBrainsMono Nerd Font (Nerd Font variant with icons) ─────────────────
 step "Installing JetBrainsMono Nerd Font"
 
-NERD_URL="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/JetBrainsMono.zip"
+NERD_URL="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip"
 FONT_DIR="$HOME/.local/share/fonts"
+FONT_MARKER="$FONT_DIR/JetBrainsMonoNerdFont-Regular.ttf"
 
-if fc-list 2>/dev/null | grep -qi "JetBrainsMono.*Nerd Font"; then
-    ok "JetBrainsMono Nerd Font already installed — skipping."
+if [ -f "$FONT_MARKER" ]; then
+    ok "JetBrainsMono Nerd Font already installed."
+elif fc-list 2>/dev/null | grep -qi "JetBrainsMono.*Nerd Font"; then
+    ok "JetBrainsMono Nerd Font already installed (fontconfig)."
 else
-    info "Downloading JetBrainsMono Nerd Font from GitHub..."
+    info "Downloading JetBrainsMono Nerd Font (~118MB) from GitHub..."
     mkdir -p "$FONT_DIR"
-    if curl -fsSL "$NERD_URL" -o /tmp/JetBrainsMono.zip; then
+    if curl -fSL --retry 3 --retry-delay 5 -o /tmp/JetBrainsMono.zip "$NERD_URL"; then
+        info "Extracting to $FONT_DIR ..."
         unzip -q -o /tmp/JetBrainsMono.zip -d "$FONT_DIR" 2>/dev/null
         rm -f /tmp/JetBrainsMono.zip
-        fc-cache -f 2>/dev/null
-        if fc-list 2>/dev/null | grep -qi "JetBrainsMono.*Nerd Font"; then
+        info "Updating font cache..."
+        fc-cache -f 2>/dev/null || warn "Font cache update failed (non-fatal)"
+        if [ -f "$FONT_MARKER" ]; then
             ok "JetBrainsMono Nerd Font installed."
         else
-            warn "Font downloaded but not detected by fontconfig."
-            info "Try: fc-cache -f && fc-list | grep -i jetbrain"
+            warn "Font extracted but not detected. Try: fc-cache -f && fc-list | grep -i jetbrain"
         fi
     else
-        warn "Font download failed (no network?)."
-        info "Install manually: https://www.nerdfonts.com/font-downloads"
+        warn "Download failed (check network)."
+        info "Manual: https://www.nerdfonts.com/font-downloads"
     fi
 fi
 
