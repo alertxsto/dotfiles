@@ -62,6 +62,10 @@ link "$DOTFILES/.config/alacritty/alacritty.toml"  "$HOME/.config/alacritty/alac
 link "$DOTFILES/.config/kitty/kitty.conf"           "$HOME/.config/kitty/kitty.conf"
 # Fallback theme for alacritty (will be overwritten by DMS matugen)
 cp -n "$DOTFILES/.config/alacritty/dank-theme.toml" "$HOME/.config/alacritty/dank-theme.toml" 2>/dev/null || true
+# Ensure TOML config format (migrate if needed)
+if command -v alacritty &>/dev/null; then
+    alacritty migrate 2>/dev/null || true
+fi
 
 # ── DMS Color Watcher ────────────────────────────────────
 echo ""
