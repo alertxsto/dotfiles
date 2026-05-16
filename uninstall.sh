@@ -45,9 +45,6 @@ if [ "$(uname)" != "Linux" ]; then
     die "This script only supports Linux."
 fi
 
-DOTFILES="$(cd "$(dirname "$0")" && pwd)"
-printf "${DIM}Repo: %s${NC}\n" "$DOTFILES"
-
 # ── Confirm ───────────────────────────────────────────────────────────────────
 printf "\n${YELLOW}${BOLD}⚠ This will remove all symlinks, disable services, and clean up.${NC}\n"
 printf "${YELLOW}Backups (if any) are at: ${DIM}~/.dotfiles-backup/<timestamp>/${NC}\n"
@@ -67,6 +64,9 @@ systemctl --user disable --now dms-sway-colors.path 2>/dev/null \
     || info "Not enabled, skipping."
 
 systemctl --user disable dms.service 2>/dev/null || true
+
+# Clean up the add-wants symlink too (created by install.sh step 7)
+systemctl --user disable sway-session.target.wants/dms.service 2>/dev/null || true
 
 systemctl --user daemon-reload
 ok "Services disabled."
@@ -91,7 +91,6 @@ fi
 step "Removing symlinks"
 
 links=(
-    "$HOME/.config/sway"
     "$HOME/.config/dms"
     "$HOME/.config/systemd/user/dms-sway-colors.path"
     "$HOME/.config/systemd/user/dms-sway-colors.service"
@@ -137,6 +136,6 @@ printf "\n${BOLD}${GREEN}✔ Uninstalled.${NC}\n"
 printf "\n${BOLD}Next steps:${NC}\n"
 printf "  ${CYAN}1.${NC} Restore your original configs from backup:\n"
 printf "         ${DIM}ls ~/.dotfiles-backup/  (pick a timestamp)${NC}\n"
-printf "         ${DIM}cp -r ~/.dotfiles-backup/<timestamp>/.config/sway ~/.config/sway${NC}\n"
+printf "         ${DIM}cp -r ~/.dotfiles-backup/<timestamp>/.config/* ~/.config/${NC}\n"
 printf "  ${CYAN}2.${NC} Or reinstall: ${DIM}cd ~/dotfiles && ./install.sh${NC}\n"
 printf "  ${CYAN}3.${NC} Unused packages (optional): ${DIM}sudo dnf remove dms accountsservice flameshot${NC}\n\n"

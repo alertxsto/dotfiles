@@ -90,18 +90,19 @@ if ! command -v dms &>/dev/null; then
     info "Enabling DMS COPR..."
     sudo dnf copr enable -y avengemedia/dms
     sudo dnf copr enable -y avengemedia/danklinux
-    info "Installing: dms accountsservice flameshot sway..."
-    sudo dnf install -y dms accountsservice flameshot sway
+    info "Installing: dms accountsservice flameshot sway alacritty..."
+    sudo dnf install -y dms accountsservice flameshot sway alacritty jetbrains-mono-fonts-all
     ok "Packages installed."
 else
     ok "DMS already installed — skipping package install."
-fi
 
-# Check for JetBrainsMono Nerd Font (needed by alacritty + kitty configs)
-if ! fc-list 2>/dev/null | grep -qi "JetBrainsMono Nerd Font"; then
-    warn "JetBrainsMono Nerd Font not found."
-    info "Install via: sudo dnf install jetbrains-mono-fonts-all"
-    info "Or download from: https://www.nerdfonts.com/font-downloads"
+    # Still ensure alacritty + font are present
+    if ! command -v alacritty &>/dev/null; then
+        sudo dnf install -y alacritty
+    fi
+    if ! fc-list 2>/dev/null | grep -qi "JetBrainsMono Nerd Font"; then
+        sudo dnf install -y jetbrains-mono-fonts-all
+    fi
 fi
 
 # ═════════════════════════════════════════════════════════════════════════════
