@@ -2,7 +2,6 @@
 .config/sway/dms-colors.conf
 .config/kitty/dank-theme.conf
 .config/kitty/dank-tabs.conf
-.config/alacritty/dank-theme.toml
 
 # Backup reference (optional, keep if you want)
 dotfile-diki/
