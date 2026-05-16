@@ -113,6 +113,7 @@ fi
 step "Removing symlinks"
 
 links=(
+    "$HOME/.config/sway"
     "$HOME/.config/dms"
     "$HOME/.config/systemd/user/dms-sway-colors.path"
     "$HOME/.config/systemd/user/dms-sway-colors.service"
@@ -152,6 +153,24 @@ for f in "${dms_files[@]}"; do
 done
 
 # ════════════════════════════════════════════════════════════════════════════
+# [5] Clean up leftover config directories
+# ════════════════════════════════════════════════════════════════════════════
+step "Cleaning up empty config directories"
+
+dirs=(
+    "$HOME/.config/sway"
+    "$HOME/.config/dms"
+    "$HOME/.config/alacritty"
+    "$HOME/.config/kitty"
+)
+
+for d in "${dirs[@]}"; do
+    if [ -d "$d" ] && [ ! -L "$d" ]; then
+        rmdir "$d" 2>/dev/null && ok "Removed: $d" || warn "Not empty, skipped: $d"
+    fi
+done
+
+# ════════════════════════════════════════════════════════════════════════════
 # Done
 # ════════════════════════════════════════════════════════════════════════════
 reset_scroll
@@ -162,4 +181,4 @@ printf "  ${CYAN}1.${NC} Restore your original configs from backup:\n"
 printf "         ${DIM}ls ~/.dotfiles-backup/  (pick a timestamp)${NC}\n"
 printf "         ${DIM}cp -r ~/.dotfiles-backup/<timestamp>/.config/* ~/.config/${NC}\n"
 printf "  ${CYAN}2.${NC} Or reinstall: ${DIM}cd ~/dotfiles && ./install.sh${NC}\n"
-printf "  ${CYAN}3.${NC} Unused packages (optional): ${DIM}sudo dnf remove dms accountsservice flameshot${NC}\n\n"
+printf "  ${CYAN}3.${NC} Unused packages (optional): ${DIM}sudo dnf remove dms accountsservice flameshot sway alacritty${NC}\n\n"
