@@ -119,18 +119,27 @@ fi
 step "Installing JetBrainsMono Nerd Font"
 
 NERD_URL="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/JetBrainsMono.zip"
-FONT_DIR="$HOME/.fonts"
+FONT_DIR="$HOME/.local/share/fonts"
 
 if fc-list 2>/dev/null | grep -qi "JetBrainsMono.*Nerd Font"; then
     ok "JetBrainsMono Nerd Font already installed — skipping."
 else
     info "Downloading JetBrainsMono Nerd Font from GitHub..."
     mkdir -p "$FONT_DIR"
-    curl -fsSL "$NERD_URL" -o /tmp/JetBrainsMono.zip
-    unzip -q -o /tmp/JetBrainsMono.zip -d "$FONT_DIR" 2>/dev/null
-    rm -f /tmp/JetBrainsMono.zip
-    fc-cache -f "$FONT_DIR" 2>/dev/null
-    ok "JetBrainsMono Nerd Font installed to $FONT_DIR"
+    if curl -fsSL "$NERD_URL" -o /tmp/JetBrainsMono.zip; then
+        unzip -q -o /tmp/JetBrainsMono.zip -d "$FONT_DIR" 2>/dev/null
+        rm -f /tmp/JetBrainsMono.zip
+        fc-cache -f 2>/dev/null
+        if fc-list 2>/dev/null | grep -qi "JetBrainsMono.*Nerd Font"; then
+            ok "JetBrainsMono Nerd Font installed."
+        else
+            warn "Font downloaded but not detected by fontconfig."
+            info "Try: fc-cache -f && fc-list | grep -i jetbrain"
+        fi
+    else
+        warn "Font download failed (no network?)."
+        info "Install manually: https://www.nerdfonts.com/font-downloads"
+    fi
 fi
 
 # ═════════════════════════════════════════════════════════════════════════════

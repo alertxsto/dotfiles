@@ -123,7 +123,7 @@ check_rpm accountsservice
 # ── 3. Font ────────────────────────────────────────────────────────────────────
 printf "\n${CYAN}${BOLD}── Font ──${NC}\n"
 
-if fc-list 2>/dev/null | grep -qi "JetBrainsMono Nerd Font"; then
+if fc-list 2>/dev/null | grep -qi "JetBrainsMono.*Nerd Font"; then
     pass "JetBrainsMono Nerd Font"
 else
     fail "JetBrainsMono Nerd Font — not installed"

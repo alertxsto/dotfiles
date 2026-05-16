@@ -160,10 +160,9 @@ done
 # ════════════════════════════════════════════════════════════════════════════
 step "Cleaning up JetBrainsMono Nerd Font"
 
-FONT_FILES=$(ls "$HOME/.fonts"/JetBrainsMono*Nerd* 2>/dev/null) || true
+FONT_FILES=$(find "$HOME/.local/share/fonts" "$HOME/.fonts" -name "JetBrainsMono*Nerd*" 2>/dev/null) || true
 if [ -n "$FONT_FILES" ]; then
-    warn "Skipping font cleanup: $HOME/.fonts/JetBrainsMono*Nerd*"
-    info "Remove manually if desired."
+    warn "Font files found — remove manually: rm -rf ~/.local/share/fonts/JetBrainsMono* ~/.fonts/JetBrainsMono*"
 else
     info "No Nerd Font files found — skipping."
 fi
