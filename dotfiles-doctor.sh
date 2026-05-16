@@ -133,7 +133,7 @@ check_cmd sway "Sway WM"
 check_cmd alacritty "Alacritty"
 check_cmd flameshot "Flameshot"
 check_cmd python3 "Python 3"
-check_cmd accounts-daemon "accounts-daemon" || check_rpm accountsservice
+check_rpm accountsservice
 
 # ── 3. Font ────────────────────────────────────────────────────────────────────
 printf "\n${CYAN}${BOLD}── Font ──${NC}\n"

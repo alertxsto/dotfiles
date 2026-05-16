@@ -171,6 +171,19 @@ for d in "${dirs[@]}"; do
 done
 
 # ════════════════════════════════════════════════════════════════════════════
+# Clean up Nerd Fonts installed by install.sh
+# ════════════════════════════════════════════════════════════════════════════
+step "Cleaning up JetBrainsMono Nerd Font"
+
+FONT_FILES=$(ls "$HOME/.fonts"/JetBrainsMono*Nerd* 2>/dev/null) || true
+if [ -n "$FONT_FILES" ]; then
+    warn "Skipping font cleanup: $HOME/.fonts/JetBrainsMono*Nerd*"
+    info "Remove manually if desired."
+else
+    info "No Nerd Font files found — skipping."
+fi
+
+# ════════════════════════════════════════════════════════════════════════════
 # Done
 # ════════════════════════════════════════════════════════════════════════════
 

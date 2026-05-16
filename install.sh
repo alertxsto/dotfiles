@@ -113,18 +113,39 @@ if ! command -v dms &>/dev/null; then
     sudo dnf copr enable -y avengemedia/dms
     sudo dnf copr enable -y avengemedia/danklinux
     info "Installing: dms accountsservice flameshot sway alacritty..."
-    sudo dnf install -y dms accountsservice flameshot sway alacritty jetbrains-mono-fonts-all
+    sudo dnf install -y dms accountsservice flameshot sway alacritty jetbrains-mono-fonts-all unzip
     ok "Packages installed."
 else
     ok "DMS already installed — skipping package install."
 
-    # Still ensure alacritty + font are present
+    # Still ensure alacritty + base font + unzip are present
     if ! command -v alacritty &>/dev/null; then
         sudo dnf install -y alacritty
     fi
-    if ! fc-list 2>/dev/null | grep -qi "JetBrainsMono Nerd Font"; then
+    if ! command -v unzip &>/dev/null; then
+        sudo dnf install -y unzip
+    fi
+    if ! fc-list 2>/dev/null | grep -qi "jetbrains.mono"; then
         sudo dnf install -y jetbrains-mono-fonts-all
     fi
+fi
+
+# ── JetBrainsMono Nerd Font (Nerd Font variant with icons) ─────────────────
+step "Installing JetBrainsMono Nerd Font"
+
+NERD_URL="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/JetBrainsMono.zip"
+FONT_DIR="$HOME/.fonts"
+
+if fc-list 2>/dev/null | grep -qi "JetBrainsMono.*Nerd Font"; then
+    ok "JetBrainsMono Nerd Font already installed — skipping."
+else
+    info "Downloading JetBrainsMono Nerd Font from GitHub..."
+    mkdir -p "$FONT_DIR"
+    curl -fsSL "$NERD_URL" -o /tmp/JetBrainsMono.zip
+    unzip -q -o /tmp/JetBrainsMono.zip -d "$FONT_DIR" 2>/dev/null
+    rm -f /tmp/JetBrainsMono.zip
+    fc-cache -f "$FONT_DIR" 2>/dev/null
+    ok "JetBrainsMono Nerd Font installed to $FONT_DIR"
 fi
 
 # ═════════════════════════════════════════════════════════════════════════════
