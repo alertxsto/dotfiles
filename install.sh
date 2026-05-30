@@ -16,7 +16,7 @@ banner() {
     local color="$1"
     printf "${color}${BOLD}\n"
     cat << 'BANNER'
-   █████╗ ██╗     ███████╗██████╗ ████████╗██╗  ██╗███████╗████████╗ ██████╗ 
+   █████╗ ██╗     ███████╗██████╗ ████████╗██╗  ██╗███████╗████████╗ ██████╗
   ██╔══██╗██║     ██╔════╝██╔══██╗╚══██╔══╝╚██╗██╔╝██╔════╝╚══██╔══╝██╔═══██╗
   ███████║██║     █████╗  ██████╔╝   ██║    ╚███╔╝ ███████╗   ██║   ██║   ██║
   ██╔══██║██║     ██╔══╝  ██╔══██╗   ██║    ██╔██╗ ╚════██║   ██║   ██║   ██║
@@ -49,12 +49,60 @@ if [ "$(id -u)" -eq 0 ]; then
     die "Don't run this as root. sudo will be called when needed."
 fi
 
-if [ "$(uname)" != "Linux" ]; then
-    die "This script only supports Linux."
+if [ ! -f /etc/fedora-release ]; then
+    die "This script only supports Fedora Linux."
 fi
 
 DOTFILES="$(cd "$(dirname "$0")" && pwd)"
 printf "${DIM}Repo: %s${NC}\n" "$DOTFILES"
+
+# ── Interactive prompts ───────────────────────────────────────────────────────
+CHOSEN_TERM="${CHOSEN_TERM:-}"
+CHOSEN_FM="${CHOSEN_FM:-}"
+
+if [ -z "$CHOSEN_TERM" ] && [ -t 0 ]; then
+    printf "\n${BOLD}${BLUE}── Setup Options ──${NC}\n\n"
+
+    printf "${BOLD}Terminal emulator:${NC}\n"
+    printf "  ${CYAN}1${NC}) Alacritty\n"
+    printf "  ${CYAN}2${NC}) Kitty\n"
+    printf "  ${CYAN}3${NC}) Both ${DIM}(default)${NC}\n"
+    printf "${BOLD}Choose [3]:${NC} "
+    read -r choice
+    case "${choice}" in
+        1) CHOSEN_TERM="alacritty" ;;
+        2) CHOSEN_TERM="kitty" ;;
+        3|"") CHOSEN_TERM="both" ;;
+        *) CHOSEN_TERM="both" ;;
+    esac
+    ok "Terminal: ${CHOSEN_TERM}"
+
+    printf "\n${BOLD}File manager:${NC}\n"
+    printf "  ${CYAN}1${NC}) Nautilus ${DIM}(default)${NC}\n"
+    printf "  ${CYAN}2${NC}) Thunar\n"
+    printf "  ${CYAN}3${NC}) None\n"
+    printf "${BOLD}Choose [1]:${NC} "
+    read -r choice
+    case "${choice}" in
+        1|"") CHOSEN_FM="nautilus" ;;
+        2) CHOSEN_FM="thunar" ;;
+        3) CHOSEN_FM="none" ;;
+        *) CHOSEN_FM="nautilus" ;;
+    esac
+    ok "File manager: ${CHOSEN_FM}"
+fi
+
+# Defaults when non-interactive / env vars
+CHOSEN_TERM="${CHOSEN_TERM:-both}"
+CHOSEN_FM="${CHOSEN_FM:-nautilus}"
+
+# ── Update sway default terminal ──────────────────────────────────────────────
+SWAY_TERM="$CHOSEN_TERM"
+case "$SWAY_TERM" in
+    both|alacritty) SWAY_TERM="alacritty" ;;
+esac
+sed -i 's/^set \$term .*/set $term '"$SWAY_TERM"'/' "$DOTFILES/.config/sway/config"
+ok "Sway \$term → ${SWAY_TERM}"
 
 # ── Backup helper ─────────────────────────────────────────────────────────────
 BACKUP_DIR="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
@@ -91,22 +139,52 @@ link() {
 # ═════════════════════════════════════════════════════════════════════════════
 # [1] Packages
 # ═════════════════════════════════════════════════════════════════════════════
-step "Installing packages"
+step "Installing packages & remove packages"
 
 if ! command -v dms &>/dev/null; then
     info "Enabling DMS COPR..."
     sudo dnf copr enable -y avengemedia/dms
     sudo dnf copr enable -y avengemedia/danklinux
-    info "Installing: dms accountsservice flameshot sway alacritty..."
-    sudo dnf install -y dms accountsservice flameshot sway alacritty jetbrains-mono-fonts-all unzip
+
+    PKGS=(dms accountsservice flameshot sway jetbrains-mono-fonts-all unzip)
+    case "$CHOSEN_TERM" in
+        alacritty|both) PKGS+=(alacritty) ;;
+    esac
+    case "$CHOSEN_TERM" in
+        kitty|both) PKGS+=(kitty) ;;
+    esac
+    case "$CHOSEN_FM" in
+        nautilus) PKGS+=(nautilus) ;;
+        thunar)   PKGS+=(thunar) ;;
+    esac
+
+    sudo dnf install -y "${PKGS[@]}"
+
+    REMOVE=(rofi)
+    case "$CHOSEN_FM" in
+        nautilus) REMOVE+=(Thunar) ;;
+        thunar)   REMOVE+=(nautilus) ;;
+    esac
+    sudo dnf remove -y "${REMOVE[@]}"
+
     ok "Packages installed."
 else
     ok "DMS already installed — skipping package install."
 
-    # Still ensure alacritty + base font + unzip are present
-    if ! command -v alacritty &>/dev/null; then
-        sudo dnf install -y alacritty
-    fi
+    case "$CHOSEN_TERM" in
+        alacritty|both)
+            if ! command -v alacritty &>/dev/null; then
+                sudo dnf install -y alacritty
+            fi
+            ;;
+    esac
+    case "$CHOSEN_TERM" in
+        kitty|both)
+            if ! command -v kitty &>/dev/null; then
+                sudo dnf install -y kitty
+            fi
+            ;;
+    esac
     if ! command -v unzip &>/dev/null; then
         sudo dnf install -y unzip
     fi
@@ -127,11 +205,11 @@ if [ -f "$FONT_MARKER" ]; then
 elif fc-list 2>/dev/null | grep -qi "JetBrainsMono.*Nerd Font"; then
     ok "JetBrainsMono Nerd Font already installed (fontconfig)."
 else
-    info "Downloading JetBrainsMono Nerd Font (~118MB) from GitHub..."
+    info "Downloading JetBrainsMono Nerd Font (~123MB) from GitHub..."
     mkdir -p "$FONT_DIR"
     if curl -fSL --retry 3 --retry-delay 5 -o /tmp/JetBrainsMono.zip "$NERD_URL"; then
         info "Extracting to $FONT_DIR ..."
-        unzip -q -o /tmp/JetBrainsMono.zip -d "$FONT_DIR" 2>/dev/null
+        unzip -q -o /tmp/JetBrainsMono.zip -d "$FONT_DIR"
         rm -f /tmp/JetBrainsMono.zip
         info "Updating font cache..."
         fc-cache -f 2>/dev/null || warn "Font cache update failed (non-fatal)"
@@ -169,11 +247,15 @@ step "Setting up directories"
 
 dirs=(
     "$HOME/.config/systemd/user"
-    "$HOME/.config/alacritty"
-    "$HOME/.config/kitty"
     "$HOME/.local/bin"
     "$HOME/Pictures/Screenshots"
 )
+case "$CHOSEN_TERM" in
+    alacritty|both) dirs+=("$HOME/.config/alacritty") ;;
+esac
+case "$CHOSEN_TERM" in
+    kitty|both) dirs+=("$HOME/.config/kitty") ;;
+esac
 
 for d in "${dirs[@]}"; do
     mkdir -p "$d"
@@ -202,31 +284,42 @@ link "$DOTFILES/.local/bin/dms-sway-colors" \
      "$HOME/.local/bin/dms-sway-colors"
 chmod +x "$DOTFILES/.local/bin/dms-sway-colors"
 
-# Terminal configs (individual files — DMS writes theme files alongside them)
-link "$DOTFILES/.config/alacritty/alacritty.toml" \
-     "$HOME/.config/alacritty/alacritty.toml"
-link "$DOTFILES/.config/kitty/kitty.conf" \
-     "$HOME/.config/kitty/kitty.conf"
+# Terminal configs
+case "$CHOSEN_TERM" in
+    alacritty|both)
+        link "$DOTFILES/.config/alacritty/alacritty.toml" \
+             "$HOME/.config/alacritty/alacritty.toml"
 
-# Fallback alacritty theme (copy only if not present; DMS will overwrite later)
-DANK_THEME="$HOME/.config/alacritty/dank-theme.toml"
-if [ ! -f "$DANK_THEME" ]; then
-    cp "$DOTFILES/.config/alacritty/dank-theme.toml" "$DANK_THEME"
-    ok "Deployed fallback alacritty theme."
-else
-    info "Fallback alacritty theme already present — skipping."
-fi
+        # Fallback alacritty theme
+        DANK_THEME="$HOME/.config/alacritty/dank-theme.toml"
+        if [ ! -f "$DANK_THEME" ]; then
+            cp "$DOTFILES/.config/alacritty/dank-theme.toml" "$DANK_THEME"
+            ok "Deployed fallback alacritty theme."
+        else
+            info "Fallback alacritty theme already present — skipping."
+        fi
+        ;;
+    kitty)
+        link "$DOTFILES/.config/kitty/kitty.conf" \
+             "$HOME/.config/kitty/kitty.conf"
+        ;;
+esac
 
 # ═════════════════════════════════════════════════════════════════════════════
 # [5] Alacritty TOML migration
 # ═════════════════════════════════════════════════════════════════════════════
 step "Alacritty TOML compatibility"
 
-if command -v alacritty &>/dev/null; then
-    alacritty migrate 2>/dev/null && ok "alacritty migrate ran OK." || true
-else
-    info "Alacritty not installed — skipping migration."
-fi
+case "$CHOSEN_TERM" in
+    alacritty|both)
+        if command -v alacritty &>/dev/null; then
+            alacritty migrate 2>/dev/null && ok "alacritty migrate ran OK." || true
+        fi
+        ;;
+    *)
+        info "Alacritty not installed — skipping migration."
+        ;;
+esac
 
 # ═════════════════════════════════════════════════════════════════════════════
 # [6] Generate initial sway colors
