@@ -1,0 +1,6 @@
+[Unit]
+Description=Generate pane-fm theme colors from DMS
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/dms-pane-fm-theme %h/.local/share/color-schemes/DankMatugenDark.colors %h/.config/pane-fm/themes/dms-frost.css

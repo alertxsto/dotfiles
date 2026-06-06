@@ -1,0 +1,9 @@
+[Unit]
+Description=Regenerate pane-fm theme when DMS theme changes
+
+[Path]
+PathModified=/home/alertxsto/.local/share/color-schemes/DankMatugenDark.colors
+Unit=dms-pane-fm-theme.service
+
+[Install]
+WantedBy=default.target

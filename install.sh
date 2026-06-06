@@ -59,6 +59,7 @@ printf "${DIM}Repo: %s${NC}\n" "$DOTFILES"
 # ── Interactive prompts ───────────────────────────────────────────────────────
 CHOSEN_TERM="${CHOSEN_TERM:-}"
 CHOSEN_FM="${CHOSEN_FM:-}"
+CHOSEN_WM="${CHOSEN_WM:-}"
 
 if [ -z "$CHOSEN_TERM" ] && [ -t 0 ]; then
     printf "\n${BOLD}${BLUE}── Setup Options ──${NC}\n\n"
@@ -77,24 +78,39 @@ if [ -z "$CHOSEN_TERM" ] && [ -t 0 ]; then
     esac
     ok "Terminal: ${CHOSEN_TERM}"
 
-    printf "\n${BOLD}File manager:${NC}\n"
-    printf "  ${CYAN}1${NC}) Nautilus ${DIM}(default)${NC}\n"
-    printf "  ${CYAN}2${NC}) Thunar\n"
-    printf "  ${CYAN}3${NC}) None\n"
-    printf "${BOLD}Choose [1]:${NC} "
+    printf "\n${BOLD}Window manager:${NC}\n"
+    printf "  ${CYAN}1${NC}) Sway ${DIM}(vanilla)${NC}\n"
+    printf "  ${CYAN}2${NC}) SwayFX ${DIM}(recommended)${NC}\n"
+    printf "${BOLD}Choose [2]:${NC} "
     read -r choice
     case "${choice}" in
-        1|"") CHOSEN_FM="nautilus" ;;
+        1) CHOSEN_WM="sway" ;;
+        2|"") CHOSEN_WM="swayfx" ;;
+        *) CHOSEN_WM="swayfx" ;;
+    esac
+    ok "Window manager: ${CHOSEN_WM}"
+
+    printf "\n${BOLD}File manager:${NC}\n"
+    printf "  ${CYAN}1${NC}) Nautilus\n"
+    printf "  ${CYAN}2${NC}) Thunar\n"
+    printf "  ${CYAN}3${NC}) Pane-FM ${DIM}(recommended)${NC}\n"
+    printf "  ${CYAN}4${NC}) None\n"
+    printf "${BOLD}Choose [3]:${NC} "
+    read -r choice
+    case "${choice}" in
+        1) CHOSEN_FM="nautilus" ;;
         2) CHOSEN_FM="thunar" ;;
-        3) CHOSEN_FM="none" ;;
-        *) CHOSEN_FM="nautilus" ;;
+        3|"") CHOSEN_FM="panefm" ;;
+        4) CHOSEN_FM="none" ;;
+        *) CHOSEN_FM="panefm" ;;
     esac
     ok "File manager: ${CHOSEN_FM}"
 fi
 
 # Defaults when non-interactive / env vars
 CHOSEN_TERM="${CHOSEN_TERM:-both}"
-CHOSEN_FM="${CHOSEN_FM:-nautilus}"
+CHOSEN_WM="${CHOSEN_WM:-swayfx}"
+CHOSEN_FM="${CHOSEN_FM:-panefm}"
 
 # ── Update sway default terminal ──────────────────────────────────────────────
 SWAY_TERM="$CHOSEN_TERM"
@@ -146,7 +162,15 @@ if ! command -v dms &>/dev/null; then
     sudo dnf copr enable -y avengemedia/dms
     sudo dnf copr enable -y avengemedia/danklinux
 
-    PKGS=(dms accountsservice flameshot sway jetbrains-mono-fonts-all unzip)
+    PKGS=(dms accountsservice flameshot jetbrains-mono-fonts-all unzip)
+    case "$CHOSEN_WM" in
+        sway)   PKGS+=(sway) ;;
+        swayfx)
+            sudo dnf copr enable -y swayfx/swayfx
+            sudo dnf remove -y sway
+            PKGS+=(swayfx)
+            ;;
+    esac
     case "$CHOSEN_TERM" in
         alacritty|both) PKGS+=(alacritty) ;;
     esac
@@ -161,6 +185,10 @@ if ! command -v dms &>/dev/null; then
     sudo dnf install -y "${PKGS[@]}"
 
     REMOVE=(rofi)
+    case "$CHOSEN_WM" in
+        sway)   REMOVE+=(swayfx) ;;
+        swayfx) REMOVE+=(sway) ;;
+    esac
     case "$CHOSEN_FM" in
         nautilus) REMOVE+=(Thunar) ;;
         thunar)   REMOVE+=(nautilus) ;;
@@ -192,6 +220,25 @@ else
         sudo dnf install -y jetbrains-mono-fonts-all
     fi
 fi
+
+# ── Window manager setup (always runs) ──
+case "$CHOSEN_WM" in
+    swayfx)
+        if ! rpm -q swayfx &>/dev/null; then
+            sudo dnf copr enable -y swayfx/swayfx
+            sudo dnf remove -y sway
+            sudo dnf install -y swayfx
+        fi
+        ;;
+    sway)
+        if rpm -q swayfx &>/dev/null; then
+            sudo dnf remove -y swayfx
+        fi
+        if ! rpm -q sway &>/dev/null; then
+            sudo dnf install -y sway
+        fi
+        ;;
+esac
 
 # ── JetBrainsMono Nerd Font (Nerd Font variant with icons) ─────────────────
 step "Installing JetBrainsMono Nerd Font"
@@ -250,11 +297,17 @@ dirs=(
     "$HOME/.local/bin"
     "$HOME/Pictures/Screenshots"
 )
+case "$CHOSEN_WM" in
+    swayfx) dirs+=("$HOME/.config/swayfx") ;;
+esac
 case "$CHOSEN_TERM" in
     alacritty|both) dirs+=("$HOME/.config/alacritty") ;;
 esac
 case "$CHOSEN_TERM" in
     kitty|both) dirs+=("$HOME/.config/kitty") ;;
+esac
+case "$CHOSEN_FM" in
+    panefm) dirs+=("$HOME/.config/pane-fm/themes") ;;
 esac
 
 for d in "${dirs[@]}"; do
@@ -270,6 +323,13 @@ step "Creating symlinks"
 # Sway (whole directory)
 link "$DOTFILES/.config/sway"  "$HOME/.config/sway"
 
+# SwayFX (extra config)
+case "$CHOSEN_WM" in
+    swayfx)
+        link "$DOTFILES/.config/swayfx" "$HOME/.config/swayfx"
+        ;;
+esac
+
 # DMS matugen configs
 link "$DOTFILES/.config/dms"   "$HOME/.config/dms"
 
@@ -283,6 +343,22 @@ link "$DOTFILES/.config/systemd/user/dms-sway-colors.service" \
 link "$DOTFILES/.local/bin/dms-sway-colors" \
      "$HOME/.local/bin/dms-sway-colors"
 chmod +x "$DOTFILES/.local/bin/dms-sway-colors"
+
+# Pane-FM binary and theme generator
+case "$CHOSEN_FM" in
+    panefm)
+        link "$DOTFILES/.local/bin/pane-fm" \
+             "$HOME/.local/bin/pane-fm"
+        link "$DOTFILES/.local/bin/dms-pane-fm-theme" \
+             "$HOME/.local/bin/dms-pane-fm-theme"
+        chmod +x "$DOTFILES/.local/bin/dms-pane-fm-theme"
+
+        link "$DOTFILES/.config/systemd/user/dms-pane-fm-theme.path" \
+             "$HOME/.config/systemd/user/dms-pane-fm-theme.path"
+        link "$DOTFILES/.config/systemd/user/dms-pane-fm-theme.service" \
+             "$HOME/.config/systemd/user/dms-pane-fm-theme.service"
+        ;;
+esac
 
 # Terminal configs
 case "$CHOSEN_TERM" in
@@ -337,6 +413,19 @@ else
     info "Run 'dms run' after first login to generate them."
 fi
 
+# Pane-FM theme generation
+case "$CHOSEN_FM" in
+    panefm)
+        if [ -f "$DMS_COLORS" ]; then
+            "$HOME/.local/bin/dms-pane-fm-theme" "$DMS_COLORS" "$HOME/.config/pane-fm/themes/dms-frost.css"
+            ok "Pane-FM theme generated."
+        else
+            warn "DMS theme colors not found yet."
+            info "Run 'dms run' after first login to generate them."
+        fi
+        ;;
+esac
+
 # ═════════════════════════════════════════════════════════════════════════════
 # [7] Systemd services
 # ═════════════════════════════════════════════════════════════════════════════
@@ -345,6 +434,13 @@ step "Enabling systemd services"
 systemctl --user daemon-reload
 systemctl --user enable --now dms-sway-colors.path
 ok "dms-sway-colors.path enabled."
+
+case "$CHOSEN_FM" in
+    panefm)
+        systemctl --user enable --now dms-pane-fm-theme.path
+        ok "dms-pane-fm-theme.path enabled."
+        ;;
+esac
 
 step "Binding DMS to sway-session.target"
 

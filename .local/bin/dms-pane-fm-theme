@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+import re
+import sys
+
+colors_file = sys.argv[1] if len(sys.argv) > 1 else '/home/alertxsto/.local/share/color-schemes/DankMatugenDark.colors'
+output_file = sys.argv[2] if len(sys.argv) > 2 else None
+
+with open(colors_file) as f:
+    data = f.read()
+
+def get_val(section, key):
+    m = re.search(rf'\[{re.escape(section)}\].*?^{key}=(.*?)$', data, re.MULTILINE | re.DOTALL)
+    return m.group(1).strip() if m else None
+
+def rgb_to_hex(rgb_str):
+    parts = [int(x.strip()) for x in rgb_str.split(',')]
+    return '#{:02x}{:02x}{:02x}'.format(parts[0], parts[1], parts[2])
+
+def lighten_hex(hex_str, amount):
+    hex_str = hex_str.lstrip('#')
+    r, g, b = int(hex_str[0:2], 16), int(hex_str[2:4], 16), int(hex_str[4:6], 16)
+    if amount >= 0:
+        r = min(255, int(r + (255 - r) * amount))
+        g = min(255, int(g + (255 - g) * amount))
+        b = min(255, int(b + (255 - b) * amount))
+    else:
+        r = max(0, int(r * (1 + amount)))
+        g = max(0, int(g * (1 + amount)))
+        b = max(0, int(b * (1 + amount)))
+    return '#{:02x}{:02x}{:02x}'.format(r, g, b)
+
+bg = rgb_to_hex(get_val('Colors:Window', 'BackgroundNormal'))
+fg = rgb_to_hex(get_val('Colors:Window', 'ForegroundNormal'))
+border = rgb_to_hex(get_val('Colors:Window', 'DecorationFocus'))
+accent = rgb_to_hex(get_val('Colors:Selection', 'BackgroundNormal'))
+danger = rgb_to_hex(get_val('Colors:Window', 'ForegroundNegative'))
+warning = get_val('Colors:Window', 'ForegroundWarning')
+if warning:
+    warning = rgb_to_hex(warning)
+else:
+    warning = '#FFE872'
+
+bg_secondary = lighten_hex(bg, 0.10)
+bg_surface = lighten_hex(bg, 0.05)
+bg_hover = lighten_hex(bg, 0.20)
+accent_hover = lighten_hex(accent, 0.10)
+fg_secondary = lighten_hex(fg, -0.10)
+fg_muted = lighten_hex(fg, -0.40)
+success = '#7DDD6E'
+
+output = f''':root {{
+    --bg-opacity: 65%;
+    --bg-primary: {bg};
+    --bg-secondary: {bg_secondary};
+    --bg-surface: {bg_surface};
+    --bg-hover: {bg_hover};
+    --text-primary: {fg};
+    --text-secondary: {fg_secondary};
+    --text-muted: {fg_muted};
+    --accent: {accent};
+    --accent-hover: {accent_hover};
+    --border: {border};
+    --danger: {danger};
+    --success: {success};
+    --warning: {warning};
+    --radius: 4px;
+    --font-mono: "JetBrains Mono Nerd Font", "JetBrainsMono Nerd Font", monospace;
+    --font-icon: var(--font-mono);
+    --font-sans: "Inter", sans-serif;
+    --overlay-bg: rgba(0, 0, 0, 0.5);
+    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
+    --scrollbar-width: 8px;
+    --transition-fast: 0.1s;
+    --transition-normal: 0.15s;
+    --z-dropdown: 100;
+    --z-dialog: 200;
+    --z-overlay: 300;
+}}
+'''
+
+if output_file:
+    with open(output_file, 'w') as f:
+        f.write(output)
+else:
+    print(output, end='')

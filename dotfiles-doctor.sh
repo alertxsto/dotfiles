@@ -115,10 +115,12 @@ printf "\n${CYAN}${BOLD}── Packages ──${NC}\n"
 
 check_cmd dms "DMS"
 check_cmd sway "Sway WM"
+check_cmd pane-fm "Pane-FM"
 check_cmd alacritty "Alacritty"
 check_cmd flameshot "Flameshot"
 check_cmd python3 "Python 3"
 check_rpm accountsservice
+check_rpm swayfx
 
 # ── 3. Font ────────────────────────────────────────────────────────────────────
 printf "\n${CYAN}${BOLD}── Font ──${NC}\n"
@@ -136,12 +138,17 @@ fi
 printf "\n${CYAN}${BOLD}── Symlinks ──${NC}\n"
 
 check_link "$HOME/.config/sway" "$DOTFILES/.config/sway"
+check_link "$HOME/.config/swayfx" "$DOTFILES/.config/swayfx"
 check_link "$HOME/.config/dms" "$DOTFILES/.config/dms"
 check_link "$HOME/.config/systemd/user/dms-sway-colors.path" "$DOTFILES/.config/systemd/user/dms-sway-colors.path"
 check_link "$HOME/.config/systemd/user/dms-sway-colors.service" "$DOTFILES/.config/systemd/user/dms-sway-colors.service"
+check_link "$HOME/.config/systemd/user/dms-pane-fm-theme.path" "$DOTFILES/.config/systemd/user/dms-pane-fm-theme.path"
+check_link "$HOME/.config/systemd/user/dms-pane-fm-theme.service" "$DOTFILES/.config/systemd/user/dms-pane-fm-theme.service"
 check_link "$HOME/.config/alacritty/alacritty.toml" "$DOTFILES/.config/alacritty/alacritty.toml"
 check_link "$HOME/.config/kitty/kitty.conf" "$DOTFILES/.config/kitty/kitty.conf"
 check_link "$HOME/.local/bin/dms-sway-colors" "$DOTFILES/.local/bin/dms-sway-colors"
+check_link "$HOME/.local/bin/dms-pane-fm-theme" "$DOTFILES/.local/bin/dms-pane-fm-theme"
+check_link "$HOME/.local/bin/pane-fm" "$DOTFILES/.local/bin/pane-fm"
 
 # ── 5. Script permissions ──────────────────────────────────────────────────────
 printf "\n${CYAN}${BOLD}── Scripts ──${NC}\n"
@@ -152,10 +159,23 @@ else
     fail "dms-sway-colors — not executable"
 fi
 
+if [ -x "$HOME/.local/bin/dms-pane-fm-theme" ]; then
+    pass "dms-pane-fm-theme (executable)"
+else
+    fail "dms-pane-fm-theme — not executable"
+fi
+
+if [ -x "$HOME/.local/bin/pane-fm" ]; then
+    pass "pane-fm binary (executable)"
+else
+    fail "pane-fm binary — not executable"
+fi
+
 # ── 6. Systemd ─────────────────────────────────────────────────────────────────
 printf "\n${CYAN}${BOLD}── Systemd ──${NC}\n"
 
 check_service dms-sway-colors.path
+check_service dms-pane-fm-theme.path
 check_service dms.service
 
 SWAY_WANTS="$HOME/.config/systemd/user/sway-session.target.wants/dms.service"
@@ -180,6 +200,13 @@ if [ -f "$SWAY_COLORS" ]; then
     pass "Sway generated colors: $SWAY_COLORS"
 else
     warn "Sway generated colors not found — run 'dms run' first"
+fi
+
+PANE_FM_THEME="$HOME/.config/pane-fm/themes/dms-frost.css"
+if [ -f "$PANE_FM_THEME" ]; then
+    pass "Pane-FM theme: $PANE_FM_THEME"
+else
+    warn "Pane-FM theme not found — run 'dms run' first"
 fi
 
 # ── 8. Sway config essentials ──────────────────────────────────────────────────
