@@ -3,7 +3,7 @@ set $left h
 set $down j
 set $up k
 set $right l
-set $term alacritty
+set $term kitty
 
 default_border pixel 1
 gaps inner 3
@@ -25,6 +25,7 @@ for_window [title="DMS.*"] floating enabled, border none, inhibit_idle none
 for_window [app_id="dms-overlay"] floating enabled, border none
 
 bindsym $mod+Return exec $term
+bindsym $mod+o exec pane-fm
 bindsym $mod+Shift+q kill
 bindsym $mod+d exec dms ipc call spotlight toggle
 bindsym $mod+Shift+Escape exec dms ipc call lock lock
