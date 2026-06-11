@@ -112,13 +112,11 @@ CHOSEN_TERM="${CHOSEN_TERM:-both}"
 CHOSEN_WM="${CHOSEN_WM:-swayfx}"
 CHOSEN_FM="${CHOSEN_FM:-panefm}"
 
-# ── Update sway default terminal ──────────────────────────────────────────────
+# ── Resolve sway default terminal (applied to deployed copy after step 4) ────
 SWAY_TERM="$CHOSEN_TERM"
 case "$SWAY_TERM" in
     both|alacritty) SWAY_TERM="alacritty" ;;
 esac
-sed -i 's/^set \$term .*/set $term '"$SWAY_TERM"'/' "$DOTFILES/.config/sway/config"
-ok "Sway \$term → ${SWAY_TERM}"
 
 # ── Backup helper ─────────────────────────────────────────────────────────────
 BACKUP_DIR="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
@@ -139,17 +137,13 @@ backup() {
     fi
 }
 
-# ── Symlink helper ────────────────────────────────────────────────────────────
-link() {
+# ── Copy helper ───────────────────────────────────────────────────────────────
+deploy() {
     local src="$1" dst="$2"
     backup "$dst"
-    if [ -L "$dst" ] && [ "$(readlink "$dst")" = "$src" ]; then
-        info "Already linked: $dst"
-        return
-    fi
     rm -rf "$dst"
-    ln -sf "$src" "$dst"
-    ok "Linked: $dst → $src"
+    cp -r "$src" "$dst"
+    ok "Deployed: $dst"
 }
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -167,7 +161,7 @@ if ! command -v dms &>/dev/null; then
         sway)   PKGS+=(sway) ;;
         swayfx)
             sudo dnf copr enable -y swayfx/swayfx
-            sudo dnf remove -y sway
+            sudo dnf remove -y sway 2>/dev/null || true
             PKGS+=(swayfx)
             ;;
     esac
@@ -226,7 +220,7 @@ case "$CHOSEN_WM" in
     swayfx)
         if ! rpm -q swayfx &>/dev/null; then
             sudo dnf copr enable -y swayfx/swayfx
-            sudo dnf remove -y sway
+            sudo dnf remove -y sway 2>/dev/null || true
             sudo dnf install -y swayfx
         fi
         ;;
@@ -297,9 +291,6 @@ dirs=(
     "$HOME/.local/bin"
     "$HOME/Pictures/Screenshots"
 )
-case "$CHOSEN_WM" in
-    swayfx) dirs+=("$HOME/.config/swayfx") ;;
-esac
 case "$CHOSEN_TERM" in
     alacritty|both) dirs+=("$HOME/.config/alacritty") ;;
 esac
@@ -316,55 +307,59 @@ done
 ok "Directories ready."
 
 # ═════════════════════════════════════════════════════════════════════════════
-# [4] Symlinks
+# [4] Deploy config files
 # ═════════════════════════════════════════════════════════════════════════════
-step "Creating symlinks"
+step "Deploying config files"
 
 # Sway (whole directory)
-link "$DOTFILES/.config/sway"  "$HOME/.config/sway"
+deploy "$DOTFILES/.config/sway"  "$HOME/.config/sway"
 
-# SwayFX (extra config)
-case "$CHOSEN_WM" in
-    swayfx)
-        link "$DOTFILES/.config/swayfx" "$HOME/.config/swayfx"
-        ;;
-esac
+# Patch $term in the deployed copy (not the source repo)
+sed -i 's/^set \$term .*/set $term '"$SWAY_TERM"'/' "$HOME/.config/sway/config"
+ok "Sway \$term → ${SWAY_TERM}"
+
+# Ensure dms-colors.conf exists so sway doesn't error on include
+if [ ! -f "$HOME/.config/sway/dms-colors.conf" ]; then
+    touch "$HOME/.config/sway/dms-colors.conf"
+    info "Created empty dms-colors.conf placeholder (run 'dms run' to populate)"
+fi
 
 # DMS matugen configs
-link "$DOTFILES/.config/dms"   "$HOME/.config/dms"
+deploy "$DOTFILES/.config/dms"   "$HOME/.config/dms"
 
 # Systemd units
-link "$DOTFILES/.config/systemd/user/dms-sway-colors.path"    \
-     "$HOME/.config/systemd/user/dms-sway-colors.path"
-link "$DOTFILES/.config/systemd/user/dms-sway-colors.service" \
-     "$HOME/.config/systemd/user/dms-sway-colors.service"
+deploy "$DOTFILES/.config/systemd/user/dms-sway-colors.path"    \
+       "$HOME/.config/systemd/user/dms-sway-colors.path"
+deploy "$DOTFILES/.config/systemd/user/dms-sway-colors.service" \
+       "$HOME/.config/systemd/user/dms-sway-colors.service"
 
 # Script
-link "$DOTFILES/.local/bin/dms-sway-colors" \
-     "$HOME/.local/bin/dms-sway-colors"
-chmod +x "$DOTFILES/.local/bin/dms-sway-colors"
+deploy "$DOTFILES/.local/bin/dms-sway-colors" \
+       "$HOME/.local/bin/dms-sway-colors"
+chmod +x "$HOME/.local/bin/dms-sway-colors"
 
 # Pane-FM binary and theme generator
 case "$CHOSEN_FM" in
     panefm)
-        link "$DOTFILES/.local/bin/pane-fm" \
-             "$HOME/.local/bin/pane-fm"
-        link "$DOTFILES/.local/bin/dms-pane-fm-theme" \
-             "$HOME/.local/bin/dms-pane-fm-theme"
-        chmod +x "$DOTFILES/.local/bin/dms-pane-fm-theme"
+        deploy "$DOTFILES/.local/bin/pane-fm" \
+               "$HOME/.local/bin/pane-fm"
+        chmod +x "$HOME/.local/bin/pane-fm"
+        deploy "$DOTFILES/.local/bin/dms-pane-fm-theme" \
+               "$HOME/.local/bin/dms-pane-fm-theme"
+        chmod +x "$HOME/.local/bin/dms-pane-fm-theme"
 
-        link "$DOTFILES/.config/systemd/user/dms-pane-fm-theme.path" \
-             "$HOME/.config/systemd/user/dms-pane-fm-theme.path"
-        link "$DOTFILES/.config/systemd/user/dms-pane-fm-theme.service" \
-             "$HOME/.config/systemd/user/dms-pane-fm-theme.service"
+        deploy "$DOTFILES/.config/systemd/user/dms-pane-fm-theme.path" \
+               "$HOME/.config/systemd/user/dms-pane-fm-theme.path"
+        deploy "$DOTFILES/.config/systemd/user/dms-pane-fm-theme.service" \
+               "$HOME/.config/systemd/user/dms-pane-fm-theme.service"
         ;;
 esac
 
 # Terminal configs
 case "$CHOSEN_TERM" in
     alacritty|both)
-        link "$DOTFILES/.config/alacritty/alacritty.toml" \
-             "$HOME/.config/alacritty/alacritty.toml"
+        deploy "$DOTFILES/.config/alacritty/alacritty.toml" \
+               "$HOME/.config/alacritty/alacritty.toml"
 
         # Fallback alacritty theme
         DANK_THEME="$HOME/.config/alacritty/dank-theme.toml"
@@ -375,9 +370,12 @@ case "$CHOSEN_TERM" in
             info "Fallback alacritty theme already present — skipping."
         fi
         ;;
-    kitty)
-        link "$DOTFILES/.config/kitty/kitty.conf" \
-             "$HOME/.config/kitty/kitty.conf"
+esac
+
+case "$CHOSEN_TERM" in
+    kitty|both)
+        deploy "$DOTFILES/.config/kitty/kitty.conf" \
+               "$HOME/.config/kitty/kitty.conf"
         ;;
 esac
 

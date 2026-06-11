@@ -65,20 +65,12 @@ check_rpm() {
     fi
 }
 
-check_link() {
-    local target=$1 expected=$2
-    if [ -L "$target" ]; then
-        local actual
-        actual=$(readlink "$target")
-        if [ "$actual" = "$expected" ]; then
-            pass "$(basename "$target") → $expected"
-        else
-            fail "$(basename "$target") → $actual (expected: $expected)"
-        fi
-    elif [ -e "$target" ]; then
-        warn "$(basename "$target") exists but is not a symlink"
+check_deployed() {
+    local target=$1
+    if [ -e "$target" ]; then
+        pass "$(basename "$target") — deployed"
     else
-        warn "$(basename "$target") — missing"
+        fail "$(basename "$target") — missing (run install.sh)"
     fi
 }
 
@@ -134,21 +126,20 @@ else
     fail "JetBrainsMono Nerd Font — not installed"
 fi
 
-# ── 4. Symlinks ────────────────────────────────────────────────────────────────
-printf "\n${CYAN}${BOLD}── Symlinks ──${NC}\n"
+# ── 4. Config files ──────────────────────────────────────────────────────────────────
+printf "\n${CYAN}${BOLD}── Config files ──${NC}\n"
 
-check_link "$HOME/.config/sway" "$DOTFILES/.config/sway"
-check_link "$HOME/.config/swayfx" "$DOTFILES/.config/swayfx"
-check_link "$HOME/.config/dms" "$DOTFILES/.config/dms"
-check_link "$HOME/.config/systemd/user/dms-sway-colors.path" "$DOTFILES/.config/systemd/user/dms-sway-colors.path"
-check_link "$HOME/.config/systemd/user/dms-sway-colors.service" "$DOTFILES/.config/systemd/user/dms-sway-colors.service"
-check_link "$HOME/.config/systemd/user/dms-pane-fm-theme.path" "$DOTFILES/.config/systemd/user/dms-pane-fm-theme.path"
-check_link "$HOME/.config/systemd/user/dms-pane-fm-theme.service" "$DOTFILES/.config/systemd/user/dms-pane-fm-theme.service"
-check_link "$HOME/.config/alacritty/alacritty.toml" "$DOTFILES/.config/alacritty/alacritty.toml"
-check_link "$HOME/.config/kitty/kitty.conf" "$DOTFILES/.config/kitty/kitty.conf"
-check_link "$HOME/.local/bin/dms-sway-colors" "$DOTFILES/.local/bin/dms-sway-colors"
-check_link "$HOME/.local/bin/dms-pane-fm-theme" "$DOTFILES/.local/bin/dms-pane-fm-theme"
-check_link "$HOME/.local/bin/pane-fm" "$DOTFILES/.local/bin/pane-fm"
+check_deployed "$HOME/.config/sway"
+check_deployed "$HOME/.config/dms"
+check_deployed "$HOME/.config/systemd/user/dms-sway-colors.path"
+check_deployed "$HOME/.config/systemd/user/dms-sway-colors.service"
+check_deployed "$HOME/.config/systemd/user/dms-pane-fm-theme.path"
+check_deployed "$HOME/.config/systemd/user/dms-pane-fm-theme.service"
+check_deployed "$HOME/.config/alacritty/alacritty.toml"
+check_deployed "$HOME/.config/kitty/kitty.conf"
+check_deployed "$HOME/.local/bin/dms-sway-colors"
+check_deployed "$HOME/.local/bin/dms-pane-fm-theme"
+check_deployed "$HOME/.local/bin/pane-fm"
 
 # ── 5. Script permissions ──────────────────────────────────────────────────────
 printf "\n${CYAN}${BOLD}── Scripts ──${NC}\n"
@@ -221,9 +212,9 @@ if [ -f "$SWAY_CFG" ]; then
     grep -q "start sway-session.target" "$SWAY_CFG" \
         && pass "  start sway-session.target" \
         || warn "  start sway-session.target — missing"
-    grep -q 'set \$term alacritty' "$SWAY_CFG" \
-        && pass "  \$term = alacritty" \
-        || warn "  \$term — alacritty not set"
+    grep -qE '^set \$term (alacritty|kitty|foot|wezterm)' "$SWAY_CFG" \
+        && pass "  \$term set" \
+        || warn "  \$term — not set to a known terminal"
 else
     fail "sway/config — not found"
 fi
@@ -271,7 +262,7 @@ elif [ "$FAIL" -eq 0 ]; then
     printf "\n${YELLOW}Minor warnings — check items above.${NC}\n"
 else
     printf "\n${RED}Some checks failed — review items above.${NC}\n"
-    printf "${YELLOW}Tip: re-run ${DIM}./install.sh${NC}${YELLOW} to fix symlinks and services.${NC}\n"
+    printf "${YELLOW}Tip: re-run ${DIM}./install.sh${NC}${YELLOW} to redeploy configs and fix services.${NC}\n"
 fi
 
 exit "$FAIL"

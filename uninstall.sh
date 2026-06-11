@@ -53,7 +53,7 @@ if [ "$(uname)" != "Linux" ]; then
 fi
 
 # ── Confirm ───────────────────────────────────────────────────────────────────
-printf "\n${YELLOW}${BOLD}⚠ This will remove all symlinks, disable services, and clean up.${NC}\n"
+printf "\n${YELLOW}${BOLD}⚠ This will remove all deployed configs, disable services, and clean up.${NC}\n"
 printf "${YELLOW}Backups (if any) are at: ${DIM}~/.dotfiles-backup/<timestamp>/${NC}\n"
 read -rp "Continue? [y/N] " confirm
 if [[ ! "$confirm" =~ ^[yY]$ ]]; then
@@ -93,11 +93,11 @@ else
 fi
 
 # ════════════════════════════════════════════════════════════════════════════
-# [3] Remove symlinks (reverse of install step 4)
+# [3] Remove deployed config files (reverse of install step 4)
 # ════════════════════════════════════════════════════════════════════════════
-step "Removing symlinks"
+step "Removing deployed config files"
 
-links=(
+deployed=(
     "$HOME/.config/sway"
     "$HOME/.config/dms"
     "$HOME/.config/systemd/user/dms-sway-colors.path"
@@ -105,16 +105,18 @@ links=(
     "$HOME/.config/alacritty/alacritty.toml"
     "$HOME/.config/kitty/kitty.conf"
     "$HOME/.local/bin/dms-sway-colors"
+    "$HOME/.local/bin/pane-fm"
+    "$HOME/.local/bin/dms-pane-fm-theme"
+    "$HOME/.config/systemd/user/dms-pane-fm-theme.path"
+    "$HOME/.config/systemd/user/dms-pane-fm-theme.service"
 )
 
-for link in "${links[@]}"; do
-    if [ -L "$link" ]; then
-        rm "$link"
-        ok "Removed symlink: $link"
-    elif [ ! -e "$link" ]; then
-        info "Already absent: $link"
+for item in "${deployed[@]}"; do
+    if [ -e "$item" ]; then
+        rm -rf "$item"
+        ok "Removed: $item"
     else
-        info "Not a symlink, skipping: $link"
+        info "Already absent: $item"
     fi
 done
 
