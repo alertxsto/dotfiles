@@ -4,6 +4,7 @@ set $down j
 set $up k
 set $right l
 set $term kitty
+set $file nautilus
 
 default_border pixel 1
 gaps inner 3
@@ -20,10 +21,16 @@ input type:touchpad {
     middle_emulation enabled
 }
 
+input type:pointer {
+	accel_profile flat
+	pointer_accel 0
+}
+
 for_window [app_id="quickshell"] floating enabled, border none, inhibit_idle none
 for_window [title="DMS.*"] floating enabled, border none, inhibit_idle none
 for_window [app_id="dms-overlay"] floating enabled, border none
 
+bindsym $mod+Shift+n exec $file
 bindsym $mod+Return exec $term
 bindsym $mod+o exec pane-fm
 bindsym $mod+Shift+q kill
